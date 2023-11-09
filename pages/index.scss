@@ -1,0 +1,12 @@
+.toggle-button {
+  background-color: #ccc;
+  border: 2px solid #777;
+  border-radius: 30px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.toggle-button.active {
+  background-color: #3498db;
+  color: white;
+}
