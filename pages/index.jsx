@@ -51,85 +51,92 @@ const SpotsPage = () => {
     const fazerRequisicoes = async () => {
       const results = [];
       const totalPorEstabelecimento = {};
-
+  
       const hoje = new Date();
       const diaDaSemana = hoje.getDay() + 1;
       const diaAtual = `'${diaDaSemana}'`;
-
+  
       const formattedDate = `${hoje.getFullYear()}-${(hoje.getMonth() + 1).toString().padStart(2, '0')}-${hoje.getDate().toString().padStart(2, '0')}`;
-
-      var myHeaders = new Headers();
-      myHeaders.append("cnpj", "28.165.341/0001-36");
-      myHeaders.append("token", "462c2038-fe86-4d87-afcc-2aa1df420262");
-      myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
-
-      for (let i = 1; i <= 68; i++) {
-        if (i === 2) {
-          continue;
-        }
-
-        var urlencoded = new URLSearchParams();
-        urlencoded.append("@codestabelec", i.toString());
-        urlencoded.append("@dia", diaAtual);
-
-        var requestOptions = {
-          method: "POST",
-          headers: myHeaders,
-          body: urlencoded,
-          redirect: "follow",
-        };
-
-        const response = await fetch(
-          "https://mercadominio.websac.net/v3/api/relatorio/32",
-          requestOptions
-        );
-
-        const data = await response.text();
-
-        try {
-          const jsonData = JSON.parse(data);
-          if (!Array.isArray(jsonData)) {
-            const dataArray = Object.values(jsonData);
-            const reagrupado = reagruparJSON(dataArray);
-            results.push(...reagrupado);
-          } else {
-            const reagrupado = reagruparJSON(jsonData);
-            results.push(...reagrupado);
+  
+      try {
+        var myHeaders = new Headers();
+        myHeaders.append("cnpj", "28.165.341/0001-36");
+        myHeaders.append("token", "462c2038-fe86-4d87-afcc-2aa1df420262");
+        myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
+  
+        // Remover as features problemáticas do cabeçalho Permissions-Policy
+        myHeaders.append("Permissions-Policy", "geolocation=(), microphone=()");
+  
+        for (let i = 1; i <= 68; i++) {
+          if (i === 2) {
+            continue;
           }
-        } catch (error) {
-          console.error("Error parsing JSON data:", error);
-        }
-      }
-
-      results.forEach((item) => {
-        const codEstabelecimento = item.codestabelec;
-        const formattedCurrentDate = currentDate.padStart(2, '0');
-
-        if (item.data === formattedCurrentDate) {
-          if (!totalPorEstabelecimento[codEstabelecimento]) {
-            totalPorEstabelecimento[codEstabelecimento] = {
-              total: 0,
-              contagem: 0,
-            };
+  
+          var urlencoded = new URLSearchParams();
+          urlencoded.append("@codestabelec", i.toString());
+          urlencoded.append("@dia", diaAtual);
+  
+          var requestOptions = {
+            method: "POST",
+            headers: myHeaders,
+            body: urlencoded,
+            redirect: "follow",
+          };
+  
+          const response = await fetch(
+            "https://mercadominio.websac.net/v3/api/relatorio/32",
+            requestOptions
+          );
+  
+          const data = await response.text();
+  
+          try {
+            const jsonData = JSON.parse(data);
+            if (!Array.isArray(jsonData)) {
+              const dataArray = Object.values(jsonData);
+              const reagrupado = reagruparJSON(dataArray);
+              results.push(...reagrupado);
+            } else {
+              const reagrupado = reagruparJSON(jsonData);
+              results.push(...reagrupado);
+            }
+          } catch (error) {
+            console.error("Error parsing JSON data:", error);
           }
-
-          totalPorEstabelecimento[codEstabelecimento].total += item.total;
-          totalPorEstabelecimento[codEstabelecimento].contagem++;
         }
-      });
-
-      for (const codEstabelecimento in totalPorEstabelecimento) {
-        const item = totalPorEstabelecimento[codEstabelecimento];
-        item.media = item.total / item.contagem;
+  
+        results.forEach((item) => {
+          const codEstabelecimento = item.codestabelec;
+          const formattedCurrentDate = currentDate.padStart(2, '0');
+  
+          if (item.data === formattedCurrentDate) {
+            if (!totalPorEstabelecimento[codEstabelecimento]) {
+              totalPorEstabelecimento[codEstabelecimento] = {
+                total: 0,
+                contagem: 0,
+              };
+            }
+  
+            totalPorEstabelecimento[codEstabelecimento].total += item.total;
+            totalPorEstabelecimento[codEstabelecimento].contagem++;
+          }
+        });
+  
+        for (const codEstabelecimento in totalPorEstabelecimento) {
+          const item = totalPorEstabelecimento[codEstabelecimento];
+          item.media = item.total / item.contagem;
+        }
+  
+        setResponses(results);
+        setTotalVendasPorEstabelecimento(totalPorEstabelecimento);
+        setCurrentDate(formattedDate);
+      } catch (error) {
+        console.error("Erro ao fazer requisições:", error);
       }
-
-      setResponses(results);
-      setTotalVendasPorEstabelecimento(totalPorEstabelecimento);
-      setCurrentDate(formattedDate);
     };
-
+  
     fazerRequisicoes();
-
+  
     const updateCurrentPeriod = () => {
       const now = new Date();
       const hora = now.getHours();
@@ -138,13 +145,14 @@ const SpotsPage = () => {
       const periodo = `${periodoStart}h-${periodoEnd}h`;
       setCurrentPeriod(periodo);
     };
-
+  
     updateCurrentPeriod();
-
+  
     const interval = setInterval(updateCurrentPeriod, 30 * 60 * 1000);
-
+  
     return () => clearInterval(interval);
   }, []);
+  
 
   const calcularPorcentagem = (vendaDiária, media) => {
     if (media === 0) return 0;
@@ -191,12 +199,12 @@ const SpotsPage = () => {
       var dataString = element.data
       var dataArray = new Date(dataString);
       var dataNome = dataArray.getDay();
-      var nomeData = diasDaSemana[dataNome + 1]
+      var nomeData = diasDaSemana[dataNome]
       if (nomeData === nomeDoDia) {
         media += element.total
       }
     });
-
+    console.log(media / 8)
     return media / 8
   }
 
