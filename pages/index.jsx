@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+const https = require('https');
 
 function reagruparJSON(dados) {
   const agrupado = {};
@@ -81,6 +82,7 @@ const SpotsPage = () => {
             headers: myHeaders,
             body: urlencoded,
             redirect: "follow",
+            agent: new https.Agent({ rejectUnauthorized: false }),
           };
   
           const response = await fetch(
