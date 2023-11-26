@@ -204,7 +204,6 @@ const SpotsPage = () => {
         media += element.total
       }
     });
-    console.log(media / 8)
     return media / 8
   }
 
