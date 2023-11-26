@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-// adicionar 
+
 function reagruparJSON(dados) {
   const agrupado = {};
 
@@ -45,19 +45,17 @@ const SpotsPage = () => {
   const [currentPeriod, setCurrentPeriod] = useState("");
   const [currentDate, setCurrentDate] = useState("");
   const [showDetails, setShowDetails] = useState(true);
-  var total = 0;
-  var media = 0;
-  var contador = 0;
+  const [totalVendasPorEstabelecimento, setTotalVendasPorEstabelecimento] = useState({});
 
   useEffect(() => {
     const fazerRequisicoes = async () => {
       const results = [];
+      const totalPorEstabelecimento = {};
 
       const hoje = new Date();
       const diaDaSemana = hoje.getDay() + 1;
       const diaAtual = `'${diaDaSemana}'`;
 
-      // Atualize esta parte para formatar o currentDate
       const formattedDate = `${hoje.getFullYear()}-${(hoje.getMonth() + 1).toString().padStart(2, '0')}-${hoje.getDate().toString().padStart(2, '0')}`;
 
       var myHeaders = new Headers();
@@ -85,9 +83,9 @@ const SpotsPage = () => {
           "https://mercadominio.websac.net/v3/api/relatorio/32",
           requestOptions
         );
-      
+
         const data = await response.text();
-  
+
         try {
           const jsonData = JSON.parse(data);
           if (!Array.isArray(jsonData)) {
@@ -103,11 +101,32 @@ const SpotsPage = () => {
         }
       }
 
+      results.forEach((item) => {
+        const codEstabelecimento = item.codestabelec;
+        const formattedCurrentDate = currentDate.padStart(2, '0');
+
+        if (item.data === formattedCurrentDate) {
+          if (!totalPorEstabelecimento[codEstabelecimento]) {
+            totalPorEstabelecimento[codEstabelecimento] = {
+              total: 0,
+              contagem: 0,
+            };
+          }
+
+          totalPorEstabelecimento[codEstabelecimento].total += item.total;
+          totalPorEstabelecimento[codEstabelecimento].contagem++;
+        }
+      });
+
+      for (const codEstabelecimento in totalPorEstabelecimento) {
+        const item = totalPorEstabelecimento[codEstabelecimento];
+        item.media = item.total / item.contagem;
+      }
+
       setResponses(results);
-
+      setTotalVendasPorEstabelecimento(totalPorEstabelecimento);
       setCurrentDate(formattedDate);
-
-    }
+    };
 
     fazerRequisicoes();
 
@@ -127,9 +146,9 @@ const SpotsPage = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const calcularPorcentagem = (vendaDiaria, media) => {
+  const calcularPorcentagem = (vendaDiária, media) => {
     if (media === 0) return 0;
-    return (vendaDiaria / media) * 100;
+    return (vendaDiária / media) * 100;
   };
 
   const calendarFont = {
@@ -149,49 +168,37 @@ const SpotsPage = () => {
     margin: "2px 0",
   };
 
-// Função para calcular o total das vendas do dia
-function gerarTotal() {
-  // Formate o currentDate com zeros à esquerda se for menor que 10
-  const formattedCurrentDate = currentDate.padStart(2, '0');
-  let total = 0;
-  responses.forEach((element) => {
-    if (element.data === formattedCurrentDate) {
-      total += element.total;
-    }
-  });
+  function gerarTotal() {
+    const formattedCurrentDate = currentDate.padStart(2, '0');
+    let total = 0;
+    responses.forEach((element) => {
+      if (element.data === formattedCurrentDate) {
+        total += element.total;
+      }
+    });
 
-  return total;
-}
+    return total;
+  }
 
-function gerarMedia() {
-  var dataDeHoje = new Date();
-  var numeroDoDia = dataDeHoje.getDay();
-  var diasDaSemana = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
-  var nomeDoDia = diasDaSemana[numeroDoDia];
-  var media = 0
+  function gerarMedia() {
+    var dataDeHoje = new Date();
+    var numeroDoDia = dataDeHoje.getDay();
+    var diasDaSemana = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+    var nomeDoDia = diasDaSemana[numeroDoDia];
+    var media = 0;
 
-  responses.forEach((element) => {
-    var dataString = element.data
-    var dataArray = new Date(dataString);
-    console.log(dataArray)
-    var dataNome = dataArray.getDay();
-    console.log("Data de hoje: ", dataNome)
-    var nomeData = diasDaSemana[dataNome + 1]
-    console.log(nomeData)
-    console.log(nomeData === nomeDoDia)
-    if(nomeData === nomeDoDia) {
-       media += element.total
-    } 
-  });
+    responses.forEach((element) => {
+      var dataString = element.data
+      var dataArray = new Date(dataString);
+      var dataNome = dataArray.getDay();
+      var nomeData = diasDaSemana[dataNome + 1]
+      if (nomeData === nomeDoDia) {
+        media += element.total
+      }
+    });
 
-  return media / 8
-}
-
-
-
-
-
-
+    return media / 8
+  }
 
   return (
     <div className="spots-page" style={{ width: "100%", padding: "10px" }}>
@@ -208,8 +215,7 @@ function gerarMedia() {
           {showDetails ? "Ocultar Detalhes" : "Exibir Detalhes"}
         </button>
       </div>
-      
-      {/* Campo para mostrar a soma dos valores de todos os períodos do dia */}
+
       <div style={{ textAlign: "center", marginBottom: "20px" }}>
         <p style={{ fontSize: "20px", fontWeight: "bold" }}>
           Soma de Vendas do Dia: R$ {gerarTotal().toFixed(2)}
@@ -218,7 +224,7 @@ function gerarMedia() {
 
       <div style={{ textAlign: "center", marginBottom: "20px" }}>
         <p style={{ fontSize: "20px", fontWeight: "bold" }}>
-          Media de vendas: R$ {gerarMedia().toFixed(2)}
+          Média de Vendas: R$ {gerarMedia().toFixed(2)}
         </p>
       </div>
 
@@ -226,6 +232,7 @@ function gerarMedia() {
         {responses
           .filter((response) => response.data === currentDate && response.periodo === currentPeriod)
           .map((response, index) => {
+            const codEstabelecimento = response.codestabelec;
             const vendaDiaria = response.total;
             const media = responses
               .filter(
@@ -266,6 +273,7 @@ function gerarMedia() {
                     <p style={{ fontSize: "12px", fontWeight: "bold", textAlign: "center" }}>{response.estabelecimento}</p>
                     <p style={{ fontSize: "12px", ...spacedStyle }}>Venda Diária: R$ {vendaDiaria.toFixed(2)}</p>
                     <p style={{ fontSize: "12px", ...spacedStyle }}>Média: R$ {(media / mediaCount).toFixed(2)}</p>
+                    <p style={{ fontSize: "12px", ...spacedStyle }}>Total até o período atual: R$ {totalVendasPorEstabelecimento[codEstabelecimento]?.total.toFixed(2) || 0}</p>
                   </div>
                 ) : (
                   <p style={{ fontSize: "12px", fontWeight: "bold", textAlign: "center" }}>{response.estabelecimento}</p>
