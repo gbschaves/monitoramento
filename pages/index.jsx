@@ -80,7 +80,7 @@ const SpotsPage = () => {
         };
 
         const response = await fetch(
-          "https://mercadominio.websac.net/v3/api/relatorio/32",
+          "http://mercadominio.websac.net/v3/api/relatorio/32",
           requestOptions
         );
 
