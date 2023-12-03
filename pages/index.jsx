@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from "react";
-import https from 'https';
-import express from 'express';
-import cors from 'cors';
-
-// Crie uma instância do servidor Express.
-const server = express();
-
-// Use o middleware CORS para permitir solicitações de qualquer origem.
-server.use(cors());
+const https = require('https');
 function reagruparJSON(dados) {
   const agrupado = {};
 
